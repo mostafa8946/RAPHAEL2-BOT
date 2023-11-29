@@ -1,57 +1,68 @@
-import fg from 'api-dylux'
-import { youtubedl, youtubedlv2, youtubedlv3 } from '@bochilteam/scraper'
+import ytdl from 'ytdl-core';
+import fs from 'fs';
+import os from 'os';
 
-let limit = 350
-
+let limit = 515;
 let handler = async (m, { conn, args, isPrems, isOwner, usedPrefix, command }) => {
-	if (!args || !args[0]) throw `✳️ مثال:\n${usedPrefix + command} https://youtu.be/YzkTFFwxtXI`
-	if (!args[0].match(/youtu/gi)) throw `❎ تحقق من الرابط الخاص بـ YouTube`
-	
-	let chat = global.db.data.chats[m.chat]
-	m.react(rwait) 
+  if (!args || !args[0]) throw `✳️ مثال:\n${usedPrefix + command} https://youtu.be/gczuxaDVQEs`;
+  if (!args[0].match(/youtu/gi)) throw `❎ تحقق من الرابط الخاص بموقع YouTube`;
 
-	try {
-		let q = args[1] || '360p'
-		let v = args[0]
-		const yt = await youtubedl(v).catch(async () => await youtubedlv2(v)).catch(async () => await youtubedlv3(v))
-		const dl_url = await yt.video[q].download()
-		const title = await yt.title
-		const size = await yt.video[q].fileSizeH 
-		
-		if (size.split('MB')[0] >= limit) return m.reply(` ≡  *RAPHAEL YTDL*\n\n▢ *⚖️ الحجم* : ${size}\n▢ *جودة الفيديو* : ${q}\n\n▢ _الملف يتجاوز الحد المسموح به_ *+${limit} ميجابايت*`)
-		
-		conn.sendFile(m.chat, dl_url, title + '.mp4', `
- ≡  *RAPHAEL YTDL*
-  
-▢ *📌 العنوان* : ${title}
-▢ *📟 الامتداد* : mp4
-▢ *جودة الفيديو* : ${q}
-▢ *⚖️ الحجم* : ${size}
-`.trim(), m, false, { asDocument: chat.useDocument })
-		
-		m.react(done) 
-		
-	} catch {
-		
-		const { title, result, quality, size, duration, thumb, channel } = await fg.ytv(args[0])
-		
-		if (size.split('MB')[0] >= limit) return m.reply(` ≡  *RAPHAEL YTDL2*\n\n▢ *⚖️ الحجم* : ${size}\n▢ *جودة الفيديو* : ${quality}\n\n▢ _الملف يتجاوز الحد المسموح به_ *+${limit} ميجابايت*`)
-		
-		conn.sendFile(m.chat, result, title + '.mp4', `
- ≡  *RAPHAEL YTDL2*
-  
-▢ *📌 العنوان* : ${title}
-▢ *📟 الامتداد* : mp4
-▢ *⚖️ الحجم* : ${size}
-`.trim(), m, false, { asDocument: chat.useDocument })
-		
-		m.react(done) 
-	} 
-}
+  let chat = global.db.data.chats[m.chat];
+  m.react(rwait);
+  try {
+    const info = await ytdl.getInfo(args[0]);
+    const format = ytdl.chooseFormat(info.formats, { quality: 'highest' });
+    if (!format) {
+      throw new Error('لم يتم العثور على تنسيقات صالحة');
+    }
 
-handler.help = ['ytmp4 <رابط يوتيوب>']
-handler.tags = ['dl']
-handler.command = ['ytmp4', 'video','يوتيوبmp4','يوتيوب2']
+    if (format.contentLength / (1024 * 1024) >= limit) {
+      return m.reply(`≡ *DK3MK YTDL*\n\n▢ *⚖️الحجم*: ${format.contentLength / (1024 * 1024).toFixed(2)}MB\n▢ *🎞️الجودة*: ${format.qualityLabel}\n\n▢ الملف يتجاوز حد التنزيل *+${limit} MB*`);
+    }
 
+    const tmpDir = os.tmpdir();
+    const fileName = `${tmpDir}/${info.videoDetails.videoId}.mp4`;
 
-export default handler
+    const writableStream = fs.createWriteStream(fileName);
+    ytdl(args[0], {
+      quality: format.itag,
+    }).pipe(writableStream);
+
+    writableStream.on('finish', () => {
+      conn.sendFile(
+        m.chat,
+        fs.readFileSync(fileName),
+        `${info.videoDetails.videoId}.mp4`,
+        `── ━━ • ‹ يوتيوب › • ━━ ──
+
+	  ❏ العنوان: ${info.videoDetails.title}
+	  ❐ المدة: ${info.videoDetails.lengthSeconds} ثانية
+	  ❑ المشاهدات: ${info.videoDetails.viewCount}
+	  ❒ التحميل: ${info.videoDetails.publishDate}
+	  ❒ الرابط: ${args[0]}
+
+	  *بــــــCHIFUYUــــــوت*`,
+        m,
+        false,
+        { asDocument: chat.useDocument }
+      );
+
+      fs.unlinkSync(fileName); // حذف الملف المؤقت
+      m.react(done);
+    });
+
+    writableStream.on('error', (error) => {
+      console.error(error);
+      m.reply('خطأ أثناء محاولة تنزيل الفيديو. يرجى المحاولة مرة أخرى.');
+    });
+  } catch (error) {
+    console.error(error);
+    m.reply('خطأ أثناء محاولة معالجة الفيديو. يرجى المحاولة مرة أخرى.');
+  }
+};
+
+handler.help = ['ytmp4 <yt-link>'];
+handler.tags = ['dl'];
+handler.command = ['ytmp4', 'video','يوتيوبmp4','يوتيوب2','يوتيوبب']
+
+export default handler;
