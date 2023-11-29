@@ -1,8 +1,8 @@
-const imglist = 'https://telegra.ph/file/8bd4816b5ed78b2da5bc5.jpg'
+const imglist = 'https://telegra.ph/file/4b9007c28edf3b8d6dcbb.jpg'
 let handler = async (m, { conn, usedPrefix, usedPrefix: _p, __dirname, text, isPrems })  => conn.sendFile(m.chat, imglist, 'darkman.jpg', `
 ❆╼━━❆ •﹝📜﹞• ❆━━╾❆
 
-*❮ اهلا بك/ي في اوامـر بوت 'رافـاييـل'🤖 ❯*
+*❮ اهلا بك/ي في اوامـر بوت 'يوتا'🤖 ❯*
 
 *• ∙ ∙━━╍━﹝🌀﹞━╍━━∙ ∙ •*
 *˼‏👑˹ قـسـم الـمـجـمـوعـات╿↶*
